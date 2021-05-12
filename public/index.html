@@ -10,10 +10,7 @@
 	<body>
 		<input type="file" id="file"></input>
 		<br>
-		<select id="problem">
-			
-		</select>
-		<br>
+		<select id="problem"></select>
 		<div id="send-container">
 			<input type="button" id="submit" value="send"></input>
 		</div>
@@ -34,6 +31,7 @@
 					socket.emit("file", out);
 					submit.style.display = "none";
 					results.style.display = "block";
+					results.innerText = "Waiting for results...";
 				}
 			});
 			socket.on("problem-set", function(data) {
@@ -45,7 +43,12 @@
 				}		
 			});
 			socket.on("results", function(data) {
-				console.log(data);
+				if(data) {
+					results.innerText = "Pass";
+				} else {
+					results.innerText = "Fail";
+				}
+				submit.style.display = "block";
 			});
 		</script>
 	</body>
