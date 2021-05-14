@@ -43,18 +43,18 @@ function create(id, data) {
 
 //Saves the java file, then continues to compilation
 function write(id, data) {
-	fs.writeFile("./" + id +"/" + data.name, data.text, err => {
+	fs.writeFile("./" + id +"/" + data.fileName, data.text, err => {
 		if(err) {
 			console.error(err);
 			return;
 		}
-		compile(id, data.name, data.problem);
+		compile(id, data.fileName, data.problem);
 	});
 }
 
 //Compiles the java file, then continues to run it
-function compile(id, name, problem) {
-	var ps = spawn("javac", [name], {cwd: './' + id + '/'});
+function compile(id, fileName, problem) {
+	var ps = spawn("javac", [fileName], {cwd: './' + id + '/'});
 
 	ps.stdout.on('data', (data) => {
 		console.log("Javac: " + data);
@@ -67,7 +67,7 @@ function compile(id, name, problem) {
 
 	ps.on("close", (close) => {
 		if(close == 0) {
-			run(id, name, problem);
+			run(id, fileName, problem);
 		} else {
 			exec("rm -rf " + id);
 		}
@@ -75,8 +75,8 @@ function compile(id, name, problem) {
 }
 
 //Runs the code, the continues to send input and check
-function run(id, name, problem) {
-	var ps = spawn("java", [name.substring(0, name.lastIndexOf("."))], {cwd: './' + id + '/'});
+function run(id, fileName, problem) {
+	var ps = spawn("java", [fileName.substring(0, fileName.lastIndexOf("."))], {cwd: './' + id + '/'});
 	
 	var output = "";
 

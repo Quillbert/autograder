@@ -8,6 +8,8 @@
 		</script>
 	</head>
 	<body>
+		<label for="name">Name: </label><input name="name" type="text" id="name"></input>
+		<br>
 		<input type="file" id="file"></input>
 		<br>
 		<select id="problem"></select>
@@ -24,13 +26,14 @@
 			submit.addEventListener('click', async function(event) {
 				if(files.files.length > 0) {
 					var out = {
-						name: files.files[0].name,
+						fileName: files.files[0].name,
 						text: await files.files[0].text(),
 						problem: dropDown.value
 					};
 					socket.emit("file", out);
 					submit.style.display = "none";
 					results.style.display = "block";
+					results.style.color = "black";
 					results.innerText = "Waiting for results...";
 				}
 			});
@@ -45,8 +48,10 @@
 			socket.on("results", function(data) {
 				if(data) {
 					results.innerText = "Pass";
+					results.style.color = "green";
 				} else {
 					results.innerText = "Fail";
+					results.style.color = "red";
 				}
 				submit.style.display = "block";
 			});
