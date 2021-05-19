@@ -7,4 +7,9 @@ let db = new sqlite3.Database('storage.db', (err) => {
 	console.log("connected to db");
 });
 
+db.run(`CREATE TABLE IF NOT EXISTS problems(
+		name TEXT NOT NULL UNIQUE,
+		Prob01_attempts INTEGER NOT NULL DEFAULT 0,
+		Prob01_status INTEGER NOT NULL DEFAULT 0);`);
+
 db.close();

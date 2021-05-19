@@ -3,13 +3,30 @@ const {spawn, exec} = require('child_process');
 const express = require('express');
 const socket = require('socket.io');
 const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 
-//Load the names of the problems
+//connect to database
+var db = new sqlite3.Database('storage.db', (err) => {
+	if(err) {
+		console.error(err);
+		return;
+	}
+	console.log("connected to db");
+});
+
+//Load the names of the problems and initiliazes sql table if not already done
 var problems;
 exec("ls", {cwd:"./tests"}, (err, stdout) => {
 	problems = stdout.split("\n");
 	problems.pop();
 	console.log("Problems loaded");
+	var query = "name TEXT NOT NULL UNIQUE, ";
+	for(let i = 0; i < problems.length; i++) {
+		query += "\"" + problems[i] + "_attempts\" INTEGER DEFAULT 0, ";
+		query += "\"" + problems[i] + "_status\" INTEGER DEFAULT 0, ";
+	}
+	query = query.substring(0, query.length-2);
+	db.run("CREATE TABLE IF NOT EXISTS problems (" +  query + ");");
 });
 
 //Initializing Servers
