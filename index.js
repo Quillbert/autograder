@@ -40,12 +40,23 @@ console.log("socket started");
 //Handling Server Messages
 io.on("connection", function(socket) {
 	socket.on("file", function(data) {
-		create(socket.id, data);
+		insertName(socket.id, data);
 	});
 	socket.on("problem-request", function(data) {
 		io.emit("problem-set", problems);
 	});
 });
+
+//Adds userName to db if it isn't already there, then continues to run problem
+function insertName(id, data) {
+	db.run("INSERT OR IGNORE INTO problems (name) VALUES (?);", data.userName, (err) => {
+		if(err) {
+			console.error(err);
+			return;
+		}
+		create(id, data);
+	});
+}
 
 //Create a folder for java files, then continue execution
 function create(id, data) {
@@ -54,9 +65,21 @@ function create(id, data) {
 			console.error(err);
 			return;
 		}
-		write(id, data);
+		addAttempt(id, data);
 	});
 }
+
+//Updates the Problem attempt counter
+function addAttempt(id, data) {
+	var query = "\"" + data.problem + "_attempts\"";
+	db.run("UPDATE problems SET " + query + " = " + query + " + 1 WHERE name = ?;", data.userName, (err) => {
+		if(err) {
+			console.error(err);
+			return;
+		}
+		write(id, data);
+	});
+}	
 
 //Saves the java file, then continues to compilation
 function write(id, data) {
@@ -65,13 +88,13 @@ function write(id, data) {
 			console.error(err);
 			return;
 		}
-		compile(id, data.fileName, data.problem);
+		compile(id, data);
 	});
 }
 
 //Compiles the java file, then continues to run it
-function compile(id, fileName, problem) {
-	var ps = spawn("javac", [fileName], {cwd: './' + id + '/'});
+function compile(id, data) {
+	var ps = spawn("javac", [data.fileName], {cwd: './' + id + '/'});
 
 	ps.stdout.on('data', (data) => {
 		console.log("Javac: " + data);
@@ -84,7 +107,7 @@ function compile(id, fileName, problem) {
 
 	ps.on("close", (close) => {
 		if(close == 0) {
-			run(id, fileName, problem);
+			run(id, data);
 		} else {
 			exec("rm -rf " + id);
 		}
@@ -92,8 +115,8 @@ function compile(id, fileName, problem) {
 }
 
 //Runs the code, the continues to send input and check
-function run(id, fileName, problem) {
-	var ps = spawn("java", [fileName.substring(0, fileName.lastIndexOf("."))], {cwd: './' + id + '/'});
+function run(id, data) {
+	var ps = spawn("java", [data.fileName.substring(0, data.fileName.lastIndexOf("."))], {cwd: './' + id + '/'});
 	
 	var output = "";
 
@@ -108,10 +131,10 @@ function run(id, fileName, problem) {
 
 	ps.on("close", (close) => {
 		exec("rm -rf " + id);
-		getOutputFile(output, problem, id);
+		getOutputFile(output, data, id);
 	});
 
-	getInputFile(ps, problem);
+	getInputFile(ps, data.problem);
 
 }
 
@@ -127,15 +150,16 @@ function send(ps, problem, inFile) {
 }
 
 //Checks whether the output matches the intended output
-function check(input, problem, outFile, id) {
-	fs.readFile("./tests/" + problem + "/" + outFile, 'utf8', (err, data) => {
+function check(input, data, outFile, id) {
+	fs.readFile("./tests/" + data.problem + "/" + outFile, 'utf8', (err, content) => {
 		if(err) {
 			console.error(err);
 			return;
 		}
-		data = data.replace(/\r/g, ''); //Standardize line endings
-		console.log(String(data) == String(input));
-		io.to(id).emit("results", String(data) == String(input));
+		content = content.replace(/\r/g, ''); //Standardize line endings
+		console.log(String(content) == String(input));
+		io.to(id).emit("results", String(content) == String(input));
+		updateStatus(data, String(content) == String(input));
 	});
 }
 
@@ -158,8 +182,8 @@ function getInputFile(ps, problem) {
 }
 
 //Gets the name of the output file for a problem, then sends the data to be checked
-function getOutputFile(input, problem, id) {
-	exec("ls", {cwd: './tests/' + problem}, (err, stdout) => {
+function getOutputFile(input, data, id) {
+	exec("ls", {cwd: './tests/' + data.problem}, (err, stdout) => {
 		if(err) {
 			console.error(err);
 			return;
@@ -167,10 +191,25 @@ function getOutputFile(input, problem, id) {
 		var files = stdout.split("\n");
 		for(let i = 0; i < files.length; i++) {
 			if(files[i].indexOf(".out") >= 0) {
-				check(input, problem, files[i], id);
+				check(input, data, files[i], id);
 				return;
 			}
 		}
-		console.error("No output file for: " + problem);
+		console.error("No output file for: " + data.problem);
+	});
+}
+
+// Sets the correctness status for a problem
+function updateStatus(data, right) {
+	var query = "\"" + data.problem + "_status\"";
+	var result = 0;
+	if(right) {
+		result = 1;
+	}
+	db.run("UPDATE problems SET " + query + " = " + result + " WHERE name = ?;", data.userName, (err) => {
+		if(err) {
+			console.error(err);
+			return;
+		}
 	});
 }
