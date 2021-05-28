@@ -45,6 +45,9 @@ io.on("connection", function(socket) {
 	socket.on("problem-request", function(data) {
 		io.emit("problem-set", problems);
 	});
+	socket.on("data-request", function(data) {
+		sendData(socket.id, data);
+	});
 });
 
 //Adds userName to db if it isn't already there, then continues to run problem
@@ -211,5 +214,15 @@ function updateStatus(data, right) {
 			console.error(err);
 			return;
 		}
+	});
+}
+
+function sendData(id, data) {
+	db.get("SELECT * FROM problems WHERE name = ?;", data, (err, row) => {
+		if(err) {
+			console.error(err);
+			return;
+		}
+		io.to(id).emit("data", row);
 	});
 }

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Status - Autograder</title>
+		<script src="/../../socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+			var socket = io.connect(location.origin);
+		</script>
+		<style>
+			#display {
+				
+			}
+		</style>
+	</head>
+	<body>
+		<label for="name">Name: </label>
+		<input name="name" type="text" id="name"></input>
+		<input type="button" id="submit" value="send"></input>
+		<div id="display" style="display: none;"></div>
+		<script type="text/javascript">
+			var user = document.getElementById("name");
+			var submit = document.getElementById("submit");
+			var display = document.getElementById("display");
+			socket.emit("problem-request", "");
+			submit.addEventListener('click', function(event) {
+				socket.emit("data-request", user.value);
+			});
+			socket.on("data", function(data) {
+				console.log(data);
+				display.style.display = "block";
+				let count = 0;
+				for(let key in data) {
+					if(key == "name") {
+						continue;
+					}
+					var holder = document.createElement("span");
+					holder.innerText = data[key] + " ";
+					display.children[Math.floor(count/2)].appendChild(holder);
+					count++;
+				}
+			});
+			socket.on("problem-set", function(data) {
+				for(let i = 0; i < data.length; i++) {
+					var holder = document.createElement("div");
+					holder.innerText = data[i] + "\n";
+					display.appendChild(holder);
+				}
+			});
+		</script>
+	</body>
+</html>

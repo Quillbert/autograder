@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Autograder</title>
+		<script src="/../../socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+			var socket = io.connect(location.origin);
+			const queryString = window.location.search;
+			const urlParams = new URLSearchParams(queryString);
+			const name = urlParams.get("name");
+			if(name == null) {
+				window.location.href = window.location.origin;
+			}
+		</script>
+		<style type="text/css">
+			h1 {
+				text-align: center;
+				margin: auto;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Autograder</h1>
+		<input type="file" id="file"></input>
+	</body>
+</html>

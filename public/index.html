@@ -57,6 +57,9 @@
 				}
 				submit.style.display = "block";
 			});
+			socket.on("data", function(data) {
+				console.log(data);
+			});
 		</script>
 	</body>
 </html>
